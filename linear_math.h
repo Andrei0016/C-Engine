@@ -14,7 +14,7 @@ struct Vec3 {
 };
 
 struct Point {
-    double x, y;
+    float x, y;
 };
 
 struct Edge { Point a; Point b; };

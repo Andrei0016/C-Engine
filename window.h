@@ -17,6 +17,7 @@ class Window {
         void line(Point a, Point b, RGB color);
         void point(Point p);
         void clear();
+        bool handleEvents() const;
     private:
         SDL_Window* m_window;
         SDL_Surface* m_surface;
