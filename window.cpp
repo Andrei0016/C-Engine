@@ -1,5 +1,5 @@
 #include "window.h"
-
+#include "Renderer.h"
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -7,7 +7,7 @@
 Window::Window(const char* title, int w, int h) {
     width = w;
     height = h;
-
+    aspectRatio = w / h;
     // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         throw std::runtime_error("Couldn't initialize SDL2: " + std::string(SDL_GetError()));
@@ -27,31 +27,13 @@ Window::Window(const char* title, int w, int h) {
 
     // Optionally set the logical size if you want to handle resolution scaling
     SDL_RenderSetLogicalSize(m_renderer, w, h);
+
+    renderer = new Renderer(m_renderer);
 }
 
 Window::~Window() {
-    SDL_DestroyWindowSurface(m_window);
-    SDL_DestroyRenderer(m_renderer);
     SDL_DestroyWindow(m_window);
     SDL_Quit();
-}
-
-void Window::clear() {
-    SDL_SetRenderDrawColor(m_renderer, 0, 0, 0, 255);
-    SDL_RenderClear(m_renderer);
-}
-
-void Window::render() {
-    SDL_RenderPresent(m_renderer);
-}
-
-void Window::point(Point p) {
-    SDL_RenderDrawPointF(m_renderer, p.x, p.y);
-}
-
-void Window::line(Point a, Point b, RGB color) {
-    SDL_SetRenderDrawColor(m_renderer, color.r, color.g, color.b, 255);
-    SDL_RenderDrawLine(m_renderer, a.x, a.y, b.x, b.y);
 }
 
 bool Window::handleEvents() const {

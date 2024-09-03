@@ -15,6 +15,12 @@ add_executable(untitled1 main.cpp
         linear_math.h
         window.h
         window.cpp
-        linear_math.cpp)
+        linear_math.cpp
+        CommandBuffer.h
+        CommandBuffer.cpp
+        Renderer.h
+        Renderer.cpp
+        Object.cpp
+        Object.h)
 
 target_link_libraries(${PROJECT_NAME} SDL2main SDL2)
