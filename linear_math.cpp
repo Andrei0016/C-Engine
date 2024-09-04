@@ -100,22 +100,13 @@ Vec3 projectPoint(const Vec3& point, const Mat4& modelMatrix, const Mat4& viewMa
     Vec4 cameraPoint = viewMatrix * worldPoint;
     Vec4 clipPoint = projectionMatrix * cameraPoint;
 
-    std::cout << "Original Point: " << point.x << ", " << point.y << ", " << point.z << "\n";
-    std::cout << "World Point: " << worldPoint.x << ", " << worldPoint.y << ", " << worldPoint.z << ", " << worldPoint.w << "\n";
-    std::cout << "Camera Point: " << cameraPoint.x << ", " << cameraPoint.y << ", " << cameraPoint.z << ", " << cameraPoint.w << "\n";
-    std::cout << "Clip Point: " << clipPoint.x << ", " << clipPoint.y << ", " << clipPoint.z << ", " << clipPoint.w << "\n";
-
     // Handle potential division by zero in perspective division
     if (std::abs(clipPoint.w) > 1e-5) {
         Vec3 ndcPoint(clipPoint.x / clipPoint.w, clipPoint.y / clipPoint.w, clipPoint.z / clipPoint.w);
-        std::cout << "NDC Point: " << ndcPoint.x << ", " << ndcPoint.y << ", " << ndcPoint.z << "\n";
-
         Vec3 screenPoint;
         screenPoint.x = (ndcPoint.x + 1.0f) * 0.5f * screenWidth;
         screenPoint.y = (1.0f - ndcPoint.y) * 0.5f * screenHeight;
         screenPoint.z = ndcPoint.z;
-
-        std::cout << "Screen Point: " << screenPoint.x << ", " << screenPoint.y << ", " << screenPoint.z << "\n";
         return screenPoint;
     } else {
         // Return an invalid screen point or handle the case differently
