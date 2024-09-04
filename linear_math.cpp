@@ -50,69 +50,6 @@ Mat4 rotationMatrixZ(float angle) {
     return mat;
 }
 
-Mat4 computeModelMatrix(const Vec3& position, const Vec3& rotationAngles, const Vec3& scale) {
-    Mat4 translate = translationMatrix(position.x, position.y, position.z);
-    Mat4 rotateX = rotationMatrixX(rotationAngles.x);
-    Mat4 rotateY = rotationMatrixY(rotationAngles.y);
-    Mat4 rotateZ = rotationMatrixZ(rotationAngles.z);
-    Mat4 scaleMat = scalingMatrix(scale.x, scale.y, scale.z);
-
-    Mat4 rotationMatrix = rotateZ * rotateY * rotateX;
-    Mat4 modelMatrix = translate * rotationMatrix * scaleMat;
-
-    return modelMatrix;
-}
-
-Mat4 computeViewMatrix(const Vec3& cameraPosition, const Vec3& targetPosition, const Vec3& upVector) {
-    // Compute the forward, right, and up vectors
-    Vec3 forward = Vec3(
-        cameraPosition.x - targetPosition.x,
-        cameraPosition.y - targetPosition.y,
-        cameraPosition.z - targetPosition.z
-    );
-    float forwardLength = std::sqrt(forward.x * forward.x + forward.y * forward.y + forward.z * forward.z);
-    forward = Vec3(forward.x / forwardLength, forward.y / forwardLength, forward.z / forwardLength);
-
-    Vec3 right = Vec3(
-        upVector.y * forward.z - upVector.z * forward.y,
-        upVector.z * forward.x - upVector.x * forward.z,
-        upVector.x * forward.y - upVector.y * forward.x
-    );
-    float rightLength = std::sqrt(right.x * right.x + right.y * right.y + right.z * right.z);
-    right = Vec3(right.x / rightLength, right.y / rightLength, right.z / rightLength);
-
-    Vec3 up = Vec3(
-        forward.y * right.z - forward.z * right.y,
-        forward.z * right.x - forward.x * right.z,
-        forward.x * right.y - forward.y * right.x
-    );
-
-    // Create the View Matrix
-    Mat4 viewMatrix;
-
-    viewMatrix.m[0][0] = right.x;
-    viewMatrix.m[1][0] = right.y;
-    viewMatrix.m[2][0] = right.z;
-    viewMatrix.m[3][0] = -(right.x * cameraPosition.x + right.y * cameraPosition.y + right.z * cameraPosition.z);
-
-    viewMatrix.m[0][1] = up.x;
-    viewMatrix.m[1][1] = up.y;
-    viewMatrix.m[2][1] = up.z;
-    viewMatrix.m[3][1] = -(up.x * cameraPosition.x + up.y * cameraPosition.y + up.z * cameraPosition.z);
-
-    viewMatrix.m[0][2] = forward.x;
-    viewMatrix.m[1][2] = forward.y;
-    viewMatrix.m[2][2] = forward.z;
-    viewMatrix.m[3][2] = -(forward.x * cameraPosition.x + forward.y * cameraPosition.y + forward.z * cameraPosition.z);
-
-    viewMatrix.m[0][3] = 0.0f;
-    viewMatrix.m[1][3] = 0.0f;
-    viewMatrix.m[2][3] = 0.0f;
-    viewMatrix.m[3][3] = 1.0f;
-
-    return viewMatrix;
-}
-
 void rotateObject(Vec3& rotationAngles, float angle, char axis) {
     switch (axis) {
         case 'x':
@@ -129,27 +66,63 @@ void rotateObject(Vec3& rotationAngles, float angle, char axis) {
     }
 }
 
+Mat4 computeModelMatrix(const Vec3& position, const Vec3& rotationAngles, const Vec3& scale) {
+    Mat4 translate = translationMatrix(position.x, position.y, position.z);
+    Mat4 rotateX = rotationMatrixX(rotationAngles.x);
+    Mat4 rotateY = rotationMatrixY(rotationAngles.y);
+    Mat4 rotateZ = rotationMatrixZ(rotationAngles.z);
+    Mat4 scaleMat = scalingMatrix(scale.x, scale.y, scale.z);
+
+    Mat4 rotationMatrix = rotateZ * rotateY * rotateX;
+    Mat4 modelMatrix = translate * rotationMatrix * scaleMat;
+
+    return modelMatrix;
+}
+
+Mat4 computeViewMatrix(const Vec3& cameraPosition, const Vec3& targetPosition, const Vec3& upVector) {
+    Vec3 forward = (targetPosition - cameraPosition).normalize();
+    Vec3 right = upVector.cross(forward).normalize();
+    Vec3 up = forward.cross(right);
+
+    Mat4 viewMatrix;
+    viewMatrix.m[0][0] = right.x; viewMatrix.m[0][1] = up.x; viewMatrix.m[0][2] = -forward.x; viewMatrix.m[0][3] = 0.0f;
+    viewMatrix.m[1][0] = right.y; viewMatrix.m[1][1] = up.y; viewMatrix.m[1][2] = -forward.y; viewMatrix.m[1][3] = 0.0f;
+    viewMatrix.m[2][0] = right.z; viewMatrix.m[2][1] = up.z; viewMatrix.m[2][2] = -forward.z; viewMatrix.m[2][3] = 0.0f;
+    viewMatrix.m[3][0] = -right.dot(cameraPosition); viewMatrix.m[3][1] = -up.dot(cameraPosition); viewMatrix.m[3][2] = forward.dot(cameraPosition); viewMatrix.m[3][3] = 1.0f;
+
+    return viewMatrix;
+}
+
+
+
 Vec3 projectPoint(const Vec3& point, const Mat4& modelMatrix, const Mat4& viewMatrix, const Mat4& projectionMatrix, int screenWidth, int screenHeight) {
-    // Step 1: Transform point to world space
     Vec4 worldPoint = modelMatrix * Vec4(point, 1.0f);
-
-    // Step 2: Transform point to camera space (optional if view matrix is identity)
     Vec4 cameraPoint = viewMatrix * worldPoint;
-
-    // Step 3: Transform point to clip space
     Vec4 clipPoint = projectionMatrix * cameraPoint;
 
-    // Step 4: Perform perspective division
-    Vec3 ndcPoint = Vec3(clipPoint.x / clipPoint.w, clipPoint.y / clipPoint.w, clipPoint.z / clipPoint.w);
+    std::cout << "Original Point: " << point.x << ", " << point.y << ", " << point.z << "\n";
+    std::cout << "World Point: " << worldPoint.x << ", " << worldPoint.y << ", " << worldPoint.z << ", " << worldPoint.w << "\n";
+    std::cout << "Camera Point: " << cameraPoint.x << ", " << cameraPoint.y << ", " << cameraPoint.z << ", " << cameraPoint.w << "\n";
+    std::cout << "Clip Point: " << clipPoint.x << ", " << clipPoint.y << ", " << clipPoint.z << ", " << clipPoint.w << "\n";
 
-    // Step 5: Convert NDC to screen coordinates
-    Vec3 screenPoint;
-    screenPoint.x = (ndcPoint.x + 1.0f) * 0.5f * screenWidth;
-    screenPoint.y = (1.0f - ndcPoint.y) * 0.5f * screenHeight;
-    screenPoint.z = ndcPoint.z; // Optional, if you need depth information
+    // Handle potential division by zero in perspective division
+    if (std::abs(clipPoint.w) > 1e-5) {
+        Vec3 ndcPoint(clipPoint.x / clipPoint.w, clipPoint.y / clipPoint.w, clipPoint.z / clipPoint.w);
+        std::cout << "NDC Point: " << ndcPoint.x << ", " << ndcPoint.y << ", " << ndcPoint.z << "\n";
 
-    return screenPoint;
+        Vec3 screenPoint;
+        screenPoint.x = (ndcPoint.x + 1.0f) * 0.5f * screenWidth;
+        screenPoint.y = (1.0f - ndcPoint.y) * 0.5f * screenHeight;
+        screenPoint.z = ndcPoint.z;
+
+        std::cout << "Screen Point: " << screenPoint.x << ", " << screenPoint.y << ", " << screenPoint.z << "\n";
+        return screenPoint;
+    } else {
+        // Return an invalid screen point or handle the case differently
+        return Vec3(-1.0f, -1.0f, -1.0f); // Example: returns invalid coordinates
+    }
 }
+
 
 Mat4 createPerspectiveMatrix(float fovY, float aspectRatio, float nearPlane, float farPlane) {
     float f = 1.0f / tanf(fovY / 2.0f);

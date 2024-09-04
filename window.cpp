@@ -36,14 +36,16 @@ Window::~Window() {
     SDL_Quit();
 }
 
-bool Window::handleEvents() const {
+bool Window::handleEvents(const std::function<void(SDL_Event event)>& keyCallFunction) const {
     SDL_Event event;
     SDL_PumpEvents();
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
             return false;
         }
-        std::cout << "IDK\n";
+        if (event.type == SDL_KEYDOWN && event.key.keysym.sym >= 33 && event.key.keysym.sym <= 126) {
+            keyCallFunction(event);
+        }
     }
     return true;
 }

@@ -11,7 +11,6 @@ public:
     void startFrame();
     void endFrame();
 
-    // Add methods for command recording
     void drawLine(Point a, Point b, RGB color);
     void clear(RGB color);
     void render();

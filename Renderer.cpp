@@ -21,7 +21,7 @@ void Renderer::endFrame() {
 void Renderer::drawLine(Point a, Point b, RGB color) {
     commandBuffer.recordCall([=]() {
         SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
-        SDL_RenderDrawLine(renderer, a.x, a.y, b.x, b.y);
+        SDL_RenderDrawLineF(renderer, a.x, a.y, b.x, b.y);
     });
 }
 

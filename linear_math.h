@@ -1,14 +1,66 @@
 #pragma once
 
 #include <vector>
+#include <valarray>
 
 const float PI = 3.14159265358979323846264338327950288419716939937510;
 
 struct Vec3 {
     float x, y, z;
 
-    Vec3() : x(0), y(0), z(0) {}
-    Vec3(float x, float y, float z) : x(x), y(y), z(z) {}
+    // Constructor
+    Vec3(float x = 0.0f, float y = 0.0f, float z = 0.0f) : x(x), y(y), z(z) {}
+
+    // Addition
+    Vec3 operator+(const Vec3& other) const {
+        return Vec3(x + other.x, y + other.y, z + other.z);
+    }
+
+    // Subtraction
+    Vec3 operator-(const Vec3& other) const {
+        return Vec3(x - other.x, y - other.y, z - other.z);
+    }
+
+    // Scalar multiplication
+    Vec3 operator*(float scalar) const {
+        return Vec3(x * scalar, y * scalar, z * scalar);
+    }
+
+    // Scalar division
+    Vec3 operator/(float scalar) const {
+        if (scalar != 0.0f) {
+            return Vec3(x / scalar, y / scalar, z / scalar);
+        }
+        return *this; // or handle divide by zero error
+    }
+
+    // Dot product
+    float dot(const Vec3& other) const {
+        return x * other.x + y * other.y + z * other.z;
+    }
+
+    // Cross product
+    Vec3 cross(const Vec3& other) const {
+        return Vec3(
+                y * other.z - z * other.y,
+                z * other.x - x * other.z,
+                x * other.y - y * other.x
+        );
+    }
+
+    // Magnitude (length) of the vector
+    float magnitude() const {
+        return std::sqrt(x * x + y * y + z * z);
+    }
+
+    // Normalize the vector
+    Vec3 normalize() const {
+        float len = magnitude();
+        if (len > 0.0f) {
+            return *this / len;
+        }
+        return *this; // or handle zero length vector
+    }
 };
 
 struct Vec4 {
@@ -25,8 +77,6 @@ struct Point {
     Point(Vec3 vec3) : x(vec3.x), y(vec3.y) {}
 };
 
-struct Edge { Point a; Point b; };
-struct Edge3D { Vec3 a; Vec3 b; };
 struct Mat4 {
     float m[4][4];
 
@@ -43,6 +93,7 @@ struct Mat4 {
         result.z = m[2][0] * v.x + m[2][1] * v.y + m[2][2] * v.z + m[2][3] * 1.0f;
         return result;
     }
+
 
     Vec4 operator*(const Vec4& v) const {
         Vec4 result;
