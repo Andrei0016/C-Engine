@@ -5,49 +5,41 @@
 #include <math.h>
 
 Mat4 translationMatrix(float tx, float ty, float tz) {
-    Mat4 mat;
-    mat.m[0][3] = tx;
-    mat.m[1][3] = ty;
-    mat.m[2][3] = tz;
-    return mat;
+    return Mat4 (1.0f, 0.0f, 0.0f, tx,
+            0.0f, 1.0f, 0.0f, ty,
+            0.0f, 0.0f, 1.0f, tz,
+            0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 Mat4 scalingMatrix(float sx, float sy, float sz) {
-    Mat4 mat;
-    mat.m[0][0] = sx;
-    mat.m[1][1] = sy;
-    mat.m[2][2] = sz;
-    return mat;
+    return Mat4(sx, 0.0f, 0.0f, 0.0f,
+            0.0f, sy, 0.0f, 0.0f,
+            0.0f, 0.0f, sx, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 Mat4 rotationMatrixX(float angle) {
-    Mat4 mat;
     float rad = angle * M_PI / 180.0f;
-    mat.m[1][1] = cos(rad);
-    mat.m[1][2] = -sin(rad);
-    mat.m[2][1] = sin(rad);
-    mat.m[2][2] = cos(rad);
-    return mat;
+    return Mat4(1.0f, 0.0f, 0.0f, 0.0f,
+                0.0f, cos(rad), sin(rad), 0.0f,
+                0.0f, sin(rad), cos(rad), 0.0f,
+                0.0f, 0.0f, 1.0f, 0.0f);
 }
 
 Mat4 rotationMatrixY(float angle) {
-    Mat4 mat;
     float rad = angle * M_PI / 180.0f;
-    mat.m[0][0] = cos(rad);
-    mat.m[0][2] = sin(rad);
-    mat.m[2][0] = -sin(rad);
-    mat.m[2][2] = cos(rad);
-    return mat;
+    return Mat4(cos(rad), 0.0f, -sin(rad), 0.0f,
+                0.0f, 1.0f, 0.0f, 0.0f,
+                sin(rad), 0.0f, cos(rad), 0.0f,
+                0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 Mat4 rotationMatrixZ(float angle) {
-    Mat4 mat;
     float rad = angle * M_PI / 180.0f;
-    mat.m[0][0] = cos(rad);
-    mat.m[0][1] = -sin(rad);
-    mat.m[1][0] = sin(rad);
-    mat.m[1][1] = cos(rad);
-    return mat;
+    return Mat4(cos(rad), -sin(rad), 0.0f, 0.0f,
+                sin(rad), cos(rad), 0.0f, 0.0f,
+                0.0f, 0.0f, 1.0f, 0.0f,
+                0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 void rotateObject(Vec3& rotationAngles, float angle, char axis) {
@@ -95,36 +87,44 @@ Mat4 computeViewMatrix(const Vec3& cameraPosition, const Vec3& targetPosition, c
 
 
 
-Vec3 projectPoint(const Vec3& point, const Mat4& modelMatrix, const Mat4& viewMatrix, const Mat4& projectionMatrix, int screenWidth, int screenHeight) {
+Vec2 projectToScreen(const Vec3& point, const Mat4& modelMatrix, const Mat4& viewMatrix, const Mat4& projectionMatrix, int screenWidth, int screenHeight) {
+    // Step 1: Local -> World
     Vec4 worldPoint = modelMatrix * Vec4(point, 1.0f);
-    Vec4 cameraPoint = viewMatrix * worldPoint;
-    Vec4 clipPoint = projectionMatrix * cameraPoint;
 
-    // Handle potential division by zero in perspective division
-    if (std::abs(clipPoint.w) > 1e-5) {
-        Vec3 ndcPoint(clipPoint.x / clipPoint.w, clipPoint.y / clipPoint.w, clipPoint.z / clipPoint.w);
-        Vec3 screenPoint;
-        screenPoint.x = (ndcPoint.x + 1.0f) * 0.5f * screenWidth;
-        screenPoint.y = (1.0f - ndcPoint.y) * 0.5f * screenHeight;
-        screenPoint.z = ndcPoint.z;
-        return screenPoint;
-    } else {
-        // Return an invalid screen point or handle the case differently
-        return Vec3(-1.0f, -1.0f, -1.0f); // Example: returns invalid coordinates
+    // Step 2: World -> Camera/View
+    Vec4 viewPoint = viewMatrix * worldPoint;
+
+    // Step 3: Camera/View -> Clip Space (after projection)
+    Vec4 clipSpace = projectionMatrix * viewPoint;
+
+    // Step 4: Perspective divide (NDC conversion)
+    if (clipSpace.w != 0.0f) {
+        clipSpace.x /= clipSpace.w;
+        clipSpace.y /= clipSpace.w;
+        clipSpace.z /= clipSpace.w;
     }
+
+    // Step 5: NDC [-1,1] -> Screen coordinates
+    float screenX = (clipSpace.x * 0.5f + 0.5f) * screenWidth;
+    float screenY = (1.0f - (clipSpace.y * 0.5f + 0.5f)) * screenHeight; // Flip Y for SDL
+
+    return Vec2(screenX, screenY);
 }
 
 
-Mat4 createPerspectiveMatrix(float fovY, float aspectRatio, float nearPlane, float farPlane) {
-    float f = 1.0f / tanf(fovY / 2.0f);
-    Mat4 result = Mat4();
 
-    result.m[0][0] = f / aspectRatio;
-    result.m[1][1] = f;
-    result.m[2][2] = (farPlane + nearPlane) / (nearPlane - farPlane);
-    result.m[2][3] = (2.0f * farPlane * nearPlane) / (nearPlane - farPlane);
-    result.m[3][2] = -1.0f;
-    result.m[3][3] = 0.0f;
 
-    return result;
+
+Mat4 createPerspectiveMatrix(float width, float height, float fov, float near, float far) {
+    float aspect = width / height;
+    float f = 1.0f / tan(fov * 0.5f);
+    float rangeInv = 1.0f / (near - far);
+
+    return Mat4(
+        f / aspect, 0.0f, 0.0f, 0.0f,
+        0.0f, f, 0.0f, 0.0f,
+        0.0f, 0.0f, (far + near) * rangeInv, (2 * far * near) * rangeInv,
+        0.0f, 0.0f, -1.0f, 0.0f
+    );
 }
+

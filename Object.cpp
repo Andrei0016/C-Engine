@@ -7,11 +7,11 @@ Object::Object(const std::vector<Vec3>& points, const std::vector<std::pair<int,
 
 void Object::render(Window* window, CameraConfig cc) {
     Mat4 modelMatrix = computeModelMatrix(this->position, this->rotationAngles, this->scale);
-    std::vector<Vec3> projected;
+    std::vector<Vec2> projected;
     Mat4 viewMatrix = computeViewMatrix(cc.cameraPos, cc.targetPos, {0, 1, 0});
-    Mat4 perspectiveMatrix = createPerspectiveMatrix(cc.fovY, window->aspectRatio, cc.nearPlane, cc.farPlane);
+    Mat4 perspectiveMatrix = createPerspectiveMatrix(window->width, window->height, cc.fovY, cc.nearPlane, cc.farPlane);
     for (int i = 0; i < pointsV.size(); ++i) {
-        projected.push_back((projectPoint(pointsV[i], modelMatrix, viewMatrix, perspectiveMatrix, window->width, window->height)));
+        projected.push_back(projectToScreen(pointsV[i], modelMatrix, viewMatrix, perspectiveMatrix, window->width, window->height));
     }
     window->renderer->startFrame();
     window->renderer->clear({0, 0, 0});

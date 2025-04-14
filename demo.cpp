@@ -7,8 +7,8 @@ using namespace std;
 
 bool running = true;
 
-CameraConfig camera = CameraConfig({0.0f, 0.0f, -100.0f}, {0.0f, 0.0f, 0.0f}, 45.0f);
-Vec3 position(0.0f, 0.0f, 10.0f);
+CameraConfig camera = CameraConfig({0.0f, 0.0f, 10000.0f}, {0.0f, 0.0f, 0.0f}, 45.0f);
+Vec3 position(0.0f, 0.0f, -10.0f);
 Vec3 rotationAngles(0.0f, 0.0f, 0.0f);
 Vec3 scale(1.0f, 1.0f, 1.0f);
 vector<Vec3> p = { {0, 0, 0}, {0, 1, 0}, {1, 0, 0}, {0, 0, 1} };

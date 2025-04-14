@@ -3,7 +3,11 @@
 #include <vector>
 #include <valarray>
 
-const float PI = 3.14159265358979323846264338327950288419716939937510;
+constexpr float PI = 3.14159265358979323846264338327950288419716939937510;
+
+struct Vec2 {
+    float x, y;
+};
 
 struct Vec3 {
     float x, y, z;
@@ -75,16 +79,25 @@ struct Point {
     float x, y;
     Point(float x, float y) : x(x), y(y) {}
     Point(Vec3 vec3) : x(vec3.x), y(vec3.y) {}
+    Point(Vec2 vec2) : x(vec2.x), y(vec2.y) {}
+
 };
 
 struct Mat4 {
-    float m[4][4];
+    float m[4][4] = {0.0f, 0.0f};
 
-    Mat4() {
-        for (int i = 0; i < 4; ++i)
-            for (int j = 0; j < 4; ++j)
-                m[i][j] = (i == j) ? 1.0f : 0.0f;  // Identity matrix
+    Mat4(float a00, float a01, float a02, float a03,
+             float a10, float a11, float a12, float a13,
+             float a20, float a21, float a22, float a23,
+             float a30, float a31, float a32, float a33)
+    {
+        m[0][0] = a00; m[0][1] = a01; m[0][2] = a02; m[0][3] = a03;
+        m[1][0] = a10; m[1][1] = a11; m[1][2] = a12; m[1][3] = a13;
+        m[2][0] = a20; m[2][1] = a21; m[2][2] = a22; m[2][3] = a23;
+        m[3][0] = a30; m[3][1] = a31; m[3][2] = a32; m[3][3] = a33;
     }
+
+    Mat4() {}
 
     Vec3 operator*(const Vec3& v) const {
         Vec3 result;
@@ -106,24 +119,25 @@ struct Mat4 {
 
 
     Mat4 operator*(const Mat4& other) const {
-        Mat4 result;
-        for (int i = 0; i < 4; ++i) {
-            for (int j = 0; j < 4; ++j) {
-                result.m[i][j] = 0.0f;
-                for (int k = 0; k < 4; ++k) {
-                    result.m[i][j] += m[i][k] * other.m[k][j];
-                }
+        Mat4 Ret;
+        for (unsigned int i = 0 ; i < 4 ; i++) {
+            for (unsigned int j = 0 ; j < 4 ; j++) {
+                Ret.m[i][j] = m[i][0] * other.m[0][j] +
+                              m[i][1] * other.m[1][j] +
+                              m[i][2] * other.m[2][j] +
+                              m[i][3] * other.m[3][j];
             }
         }
-        return result;
+
+        return Ret;
     }
 };
 
 Mat4 computeViewMatrix(const Vec3& cameraPosition, const Vec3& targetPosition, const Vec3& upVector);
-Mat4 createPerspectiveMatrix(float fovY, float aspectRatio, float nearPlane, float farPlane);
+Mat4 createPerspectiveMatrix(float width, float height, float foV, float near, float far);
 Mat4 computeModelMatrix(const Vec3& position, const Vec3& rotationAngles, const Vec3& scale);
 void rotateObject(Vec3& rotationAngles, float angle, char axis);
-Vec3 projectPoint(const Vec3& point, const Mat4& modelMatrix, const Mat4& viewMatrix, const Mat4& projectionMatrix, int screenWidth, int screenHeight);
+Vec2 projectToScreen(const Vec3& point, const Mat4& modelMatrix, const Mat4& viewMatrix, const Mat4& projectionMatrix, int screenWidth, int screenHeight);
 
 
 
